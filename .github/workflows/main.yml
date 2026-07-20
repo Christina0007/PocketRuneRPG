@@ -1,0 +1,47 @@
+
+name: Build Pocket Rune RPG APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Extract game project
+        run: unzip -q PocketRuneRPG-phone-build.zip -d extracted
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.5.1"
+
+      - name: Build debug APK
+        working-directory: extracted/PocketRuneRPG
+        run: gradle --no-daemon :app:assembleDebug
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PocketRuneRPG-APK
+          path: extracted/PocketRuneRPG/app/build/outputs/apk/debug/app-debug.apk
